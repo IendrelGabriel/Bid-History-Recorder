@@ -118,6 +118,25 @@ function escapeAttr(s) {
     .replace(/</g, "&lt;");
 }
 
+function cleanCellText(s) {
+  return String(s ?? "").replace(/\s+/g, " ").trim();
+}
+
+async function saveField(id, field, value, el) {
+  el.classList.remove("err");
+  el.classList.add("saving");
+  const changes = { [field]: value };
+  const resp = await chrome.runtime.sendMessage({ type: "UPDATE_BID", id, changes });
+  el.classList.remove("saving");
+  if (!resp?.ok) {
+    el.classList.add("err");
+    setStatus(resp?.error || "Save failed", true);
+    return false;
+  }
+  setStatus("Saved.");
+  return true;
+}
+
 function setEmptyState(isEmpty) {
   emptyEl.classList.toggle("hidden", !isEmpty);
   tableWrapEl.classList.toggle("hidden", isEmpty);
@@ -130,14 +149,21 @@ function render(rows, offset) {
   rowsEl.innerHTML = "";
   setEmptyState(rows.length === 0);
   rows.forEach((r, idx) => {
+    const id = r.id;
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${offset + idx + 1}</td>
       <td>${escapeHtml(r.date)}</td>
       <td title="${escapeAttr(r.timestamp)}">${escapeHtml(formatTimestamp(r.timestamp))}</td>
-      <td>${escapeHtml(r.companyName)}</td>
-      <td>${escapeHtml(r.role)}</td>
-      <td>${escapeHtml(r.jobSummary)}</td>
+      <td><div class="editable" contenteditable="true" data-id="${escapeAttr(
+        String(id)
+      )}" data-field="companyName">${escapeHtml(r.companyName)}</div></td>
+      <td><div class="editable" contenteditable="true" data-id="${escapeAttr(
+        String(id)
+      )}" data-field="role">${escapeHtml(r.role)}</div></td>
+      <td><div class="editable" contenteditable="true" data-id="${escapeAttr(
+        String(id)
+      )}" data-field="jobSummary">${escapeHtml(r.jobSummary)}</div></td>
       <td><a href="${escapeAttr(r.jobLink)}" target="_blank" rel="noopener">${escapeHtml(
       r.jobLink
     )}</a></td>
@@ -145,6 +171,34 @@ function render(rows, offset) {
     `;
     rowsEl.appendChild(tr);
   });
+
+  // Save edits on blur (per-cell).
+  rowsEl.querySelectorAll(".editable[contenteditable='true']").forEach((el) => {
+    el.addEventListener("keydown", (ev) => {
+      // Enter saves + moves out (Shift+Enter makes a newline)
+      if (ev.key === "Enter" && !ev.shiftKey) {
+        ev.preventDefault();
+        el.blur();
+      }
+    });
+
+    el.addEventListener("focus", () => {
+      el.dataset.before = cleanCellText(el.textContent || "");
+    });
+
+    el.addEventListener("blur", async () => {
+      const before = el.dataset.before ?? "";
+      const after = cleanCellText(el.textContent || "");
+      if (after === before) return;
+      const id = Number(el.getAttribute("data-id"));
+      const field = el.getAttribute("data-field");
+      if (!field || !Number.isFinite(id)) return;
+      // Update visible text to cleaned version
+      el.textContent = after;
+      await saveField(id, field, after, el);
+    });
+  });
+
   rowsEl.querySelectorAll("button.del").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = Number(btn.getAttribute("data-id"));
@@ -185,6 +239,7 @@ async function load({ keepPage = false } = {}) {
 
   if (!keepPage) currentPage = 1;
   updatePagerUi();
+  updateSortUi();
 
   const offset = (currentPage - 1) * pageSize;
   const resp = await chrome.runtime.sendMessage({

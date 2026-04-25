@@ -158,6 +158,38 @@ async function clearAllBids() {
   });
 }
 
+async function updateBid(id, changes) {
+  const safeId = Number(id);
+  if (!Number.isFinite(safeId)) throw new Error("Invalid id");
+
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const store = tx.objectStore(STORE);
+    const getReq = store.get(safeId);
+    getReq.onerror = () => reject(getReq.error);
+    getReq.onsuccess = () => {
+      const existing = getReq.result;
+      if (!existing) {
+        reject(new Error("Not found"));
+        return;
+      }
+      const updated = {
+        ...existing,
+        ...changes,
+        id: existing.id,
+        timestamp: existing.timestamp,
+        date: existing.date,
+        jobLink: existing.jobLink,
+      };
+      const putReq = store.put(updated);
+      putReq.onerror = () => reject(putReq.error);
+      putReq.onsuccess = () => resolve(updated);
+    };
+    tx.oncomplete = () => db.close();
+  });
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "SAVE_BID" && msg.payload) {
     saveBid(msg.payload)
@@ -208,6 +240,15 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "CLEAR_ALL_BIDS") {
     clearAllBids()
       .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+    return true;
+  }
+  if (msg?.type === "UPDATE_BID" && msg.id != null && msg.changes) {
+    updateBid(msg.id, msg.changes)
+      .then(async (updated) => {
+        const mirror = await mirrorToSqlite(updated);
+        sendResponse({ ok: true, row: updated, sqlite: mirror });
+      })
       .catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
     return true;
   }

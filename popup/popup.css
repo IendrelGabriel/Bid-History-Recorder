@@ -174,3 +174,29 @@ td a {
   word-break: break-all;
   color: #1a73e8;
 }
+
+.editable {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.editable[contenteditable="true"]:hover {
+  border-color: #d6d6d6;
+  background: #fff;
+}
+.editable[contenteditable="true"]:focus {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+  border-color: transparent;
+  background: #fff;
+}
+.editable.saving {
+  opacity: 0.7;
+}
+.editable.err {
+  outline: 2px solid #b3261e;
+  outline-offset: 2px;
+}
