@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bid history</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Bid history</h1>
+      <div class="actions">
+        <button type="button" id="settings" class="ghost">Settings</button>
+        <button type="button" id="refresh">Refresh</button>
+        <button type="button" id="clear" class="danger-outline" disabled>Clear all</button>
+        <button type="button" id="export" class="primary" disabled>Export Excel</button>
+      </div>
+    </header>
+    <p class="hint">
+      Each completed application is saved automatically to the extension database (IndexedDB:
+      AutomaticBidRecord → bids) when the job form <strong>submits</strong> with an Apply/Submit-style
+      button, or when you use such a button on SPA sites. Export pulls only from that database.
+    </p>
+    <div id="status" class="status" aria-live="polite"></div>
+    <div class="pager" id="pager" aria-label="Pagination">
+      <div class="pager-left">
+        <button type="button" id="prevPage" disabled>Prev</button>
+        <button type="button" id="nextPage" disabled>Next</button>
+        <span class="page-info" id="pageInfo"></span>
+      </div>
+      <div class="pager-right">
+        <label class="page-size">
+          Rows/page
+          <select id="pageSize">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="empty" class="empty hidden" aria-hidden="true">
+      <p>No bids recorded yet.</p>
+      <p class="sub">Apply on a job page, then open this popup again.</p>
+    </div>
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>
+              <button type="button" class="th-btn" id="sortTimestamp" aria-label="Sort by Timestamp">
+                Timestamp <span class="sort-ind" id="sortInd" aria-hidden="true"></span>
+              </button>
+            </th>
+            <th>Company</th>
+            <th>Role</th>
+            <th>Summary</th>
+            <th>Link</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

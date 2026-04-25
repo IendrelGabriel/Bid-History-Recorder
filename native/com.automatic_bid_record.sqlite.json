@@ -1,0 +1,8 @@
+{
+  "name": "com.automatic_bid_record.sqlite",
+  "description": "Automatic Bid Record — SQLite mirror",
+  "path": "__REPLACE_WITH_ABSOLUTE_PATH_TO_HOST_BAT__",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://__REPLACE_WITH_EXTENSION_ID__/"]
+}
+

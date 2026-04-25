@@ -1,0 +1,12 @@
+{
+  "name": "automatic-bid-record-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native messaging host that mirrors bid history into a local SQLite DB.",
+  "main": "host.js",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^11.10.0"
+  }
+}
+

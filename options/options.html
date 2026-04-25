@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Automatic Bid Record — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Automatic Bid Record</h1>
+      <p class="lead">
+        Bids are stored automatically in the extension database (<strong>IndexedDB</strong> ·
+        <code>AutomaticBidRecord</code> · store <code>bids</code>) when you finish an application (form
+        submit with a matching control, or matching click on SPA flows). Extra button labels (one per
+        line): a save runs when the control text contains one of these phrases (case-insensitive), in
+        addition to built-in Apply / Submit application patterns.
+      </p>
+      <label for="phrases">Extra apply phrases</label>
+      <textarea id="phrases" rows="12" spellcheck="false" placeholder="e.g.&#10;Postuler&#10;Bewerben&#10;Continue to application"></textarea>
+      <div class="row" style="margin-top: 12px;">
+        <label style="display:flex; align-items:center; gap:10px; font-weight:600; margin:0;">
+          <input type="checkbox" id="sqliteEnabled" />
+          Mirror saves to local SQLite (Windows native host)
+        </label>
+      </div>
+      <p class="foot" style="margin-top: 10px;">
+        To enable SQLite mirroring, run <code>native\\install-windows.ps1</code> once and paste your
+        extension ID when prompted. The DB file will be created at
+        <code>%LOCALAPPDATA%\\AutomaticBidRecord\\bids.sqlite</code>.
+      </p>
+      <div class="row">
+        <button type="button" id="save" class="primary">Save</button>
+        <span id="msg" class="msg" role="status"></span>
+      </div>
+      <p class="foot">
+        Open the extension popup to view history and export Excel. Load the extension from
+        <code>chrome://extensions</code> (Developer mode → Load unpacked).
+      </p>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
