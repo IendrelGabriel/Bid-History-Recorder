@@ -4,6 +4,19 @@ const emptyEl = document.getElementById("empty");
 const tableWrapEl = document.getElementById("tableWrap");
 const exportBtn = document.getElementById("export");
 const clearBtn = document.getElementById("clear");
+const addBtn = document.getElementById("add");
+const addModal = document.getElementById("addModal");
+const addBackdrop = document.getElementById("addBackdrop");
+const addClose = document.getElementById("addClose");
+const addCancel = document.getElementById("addCancel");
+const addForm = document.getElementById("addForm");
+const addDateEl = document.getElementById("addDate");
+const addTimeEl = document.getElementById("addTime");
+const addLinkEl = document.getElementById("addLink");
+const addCompanyEl = document.getElementById("addCompany");
+const addRoleEl = document.getElementById("addRole");
+const addSummaryEl = document.getElementById("addSummary");
+const addSaveBtn = document.getElementById("addSave");
 const pagerEl = document.getElementById("pager");
 const prevBtn = document.getElementById("prevPage");
 const nextBtn = document.getElementById("nextPage");
@@ -33,6 +46,43 @@ function formatTimestamp(iso) {
 function setStatus(msg, isErr) {
   statusEl.textContent = msg || "";
   statusEl.classList.toggle("err", !!isErr);
+}
+
+function openAddModal() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = pad2(now.getMonth() + 1);
+  const d = pad2(now.getDate());
+  addDateEl.value = `${y}-${m}-${d}`;
+  addTimeEl.value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  addLinkEl.value = "";
+  addCompanyEl.value = "";
+  addRoleEl.value = "";
+  addSummaryEl.value = "";
+  addSaveBtn.disabled = false;
+  addModal.classList.remove("hidden");
+  addCompanyEl.focus();
+}
+
+function closeAddModal() {
+  addModal.classList.add("hidden");
+  addSaveBtn.disabled = false;
+}
+
+function localDateTimeToIso(dateStr, timeStr) {
+  const [yy, mm, dd] = String(dateStr).split("-").map((x) => Number(x));
+  const parts = String(timeStr || "00:00:00").split(":").map((x) => Number(x));
+  const hh = parts[0] || 0;
+  const mi = parts[1] || 0;
+  const ss = parts[2] || 0;
+  const dt = new Date(yy, (mm || 1) - 1, dd || 1, hh, mi, ss);
+  return dt.toISOString();
+}
+
+function dateLabelFromIso(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function escapeXml(s) {
@@ -261,6 +311,58 @@ document.getElementById("refresh").addEventListener("click", () => load({ keepPa
 
 document.getElementById("settings").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
+});
+
+addBtn.addEventListener("click", () => openAddModal());
+addBackdrop.addEventListener("click", () => closeAddModal());
+addClose.addEventListener("click", () => closeAddModal());
+addCancel.addEventListener("click", () => closeAddModal());
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && !addModal.classList.contains("hidden")) closeAddModal();
+});
+
+addForm.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  addSaveBtn.disabled = true;
+
+  const timestamp = localDateTimeToIso(addDateEl.value, addTimeEl.value);
+  const date = dateLabelFromIso(timestamp);
+
+  const payload = {
+    timestamp,
+    date,
+    companyName: cleanCellText(addCompanyEl.value),
+    jobLink: cleanCellText(addLinkEl.value),
+    jobSummary: cleanCellText(addSummaryEl.value),
+    role: cleanCellText(addRoleEl.value),
+    pageTitle: "",
+  };
+
+  if (!payload.companyName || !payload.role || !payload.jobSummary || !payload.jobLink) {
+    setStatus("Please fill all fields.", true);
+    addSaveBtn.disabled = false;
+    return;
+  }
+
+  try {
+    const u = new URL(payload.jobLink);
+    if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Link must be http(s)");
+  } catch {
+    setStatus("Please enter a valid http(s) link.", true);
+    addSaveBtn.disabled = false;
+    return;
+  }
+
+  const resp = await chrome.runtime.sendMessage({ type: "SAVE_BID", payload });
+  if (!resp?.ok) {
+    setStatus(resp?.error || "Save failed", true);
+    addSaveBtn.disabled = false;
+    return;
+  }
+
+  setStatus("Added.");
+  closeAddModal();
+  await load();
 });
 
 document.getElementById("export").addEventListener("click", async () => {
